@@ -1,9 +1,46 @@
 import json
-from sklearn.cluster import KMeans
 import numpy as np
 import csv
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import adjusted_rand_score, rand_score
+
+class KMeans:
+    def __init__(self, n_clusters):
+        self.n_clusters = n_clusters
+
+    def fit(self, X):
+        # initialize centroids randomly
+        self.centroids = X[np.random.choice(X.shape[0], self.n_clusters, replace=False)]
+
+        # initialize cluster assignments
+        self.clusters = np.zeros(X.shape[0])
+
+        # run kmeans until convergence
+        while True:
+            prev_clusters = self.clusters.copy()
+
+            # assign each point to closest centroid
+            for i, point in enumerate(X):
+                distances = np.linalg.norm(point.toarray() - self.centroids, axis=1)
+                self.clusters[i] = np.argmin(distances)
+
+            # update centroids based on mean of points in each cluster
+            for i in range(self.n_clusters):
+                self.centroids[i] = np.mean(X[self.clusters == i], axis=0)
+
+            # check for convergence
+            if np.array_equal(prev_clusters, self.clusters):
+                break
+
+
+    def predict(self, X):
+        # assign each point to closest centroid
+        clusters = np.zeros(X.shape[0])
+        for i, point in enumerate(X):
+            distances = np.linalg.norm(point.toarray() - self.centroids, axis=1)
+            clusters[i] = np.argmin(distances)
+        return clusters
+
 
 def kmeans(data, num_clusters, max_iter=100):
     # Initialize k centroids randomly from the data  points
@@ -44,7 +81,7 @@ def kmeans_cluster_and_evaluate(data_file, encoding_type):
     X = vectorizer.fit_transform(data['sentences'])
 
     # initialize KMeans with random centroids
-    model = KMeans(n_clusters=len(set(data['labels'])), init='random')
+    model = KMeans(n_clusters=len(set(data['labels'])))
 
     # fit model to data
     model.fit(X)
