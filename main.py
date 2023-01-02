@@ -3,6 +3,8 @@ import numpy as np
 import csv
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import adjusted_rand_score, rand_score
+from sentence_transformers import SentenceTransformer
+
 
 class KMeans:
     def __init__(self, n_clusters):
@@ -21,7 +23,9 @@ class KMeans:
 
             # assign each point to closest centroid
             for i, point in enumerate(X):
-                distances = np.linalg.norm(point.toarray() - self.centroids, axis=1)
+                if type(point) != type(np.array([])):
+                    point = point.toarray()
+                distances = np.linalg.norm(point - self.centroids, axis=1)
                 self.clusters[i] = np.argmin(distances)
 
             # update centroids based on mean of points in each cluster
@@ -37,34 +41,14 @@ class KMeans:
         # assign each point to closest centroid
         clusters = np.zeros(X.shape[0])
         for i, point in enumerate(X):
-            distances = np.linalg.norm(point.toarray() - self.centroids, axis=1)
+            if type(point) != type(np.array([])):
+                point = point.toarray()
+            distances = np.linalg.norm(point - self.centroids, axis=1)
             clusters[i] = np.argmin(distances)
         return clusters
 
 
-def kmeans(data, num_clusters, max_iter=100):
-    # Initialize k centroids randomly from the data  points
-    centroids = data[np.random.choice(data.shape[0], size=num_clusters, replace=False)]
-
-    for i in range(max_iter):
-        # Assign each data point to the closest centroid
-        distances = np.linalg.norm(data[:, None] - centroids, axis=2)
-        cluster_labels = np.argmin(distances, axis=1)
-
-        # Recompute the centroids as the mean of the data points assigned to each centroid
-        new_centroids = np.array([data[cluster_labels == k].mean(axis=0) for k in range(num_clusters)])
-
-        # Check for convergence
-        if np.allclose(centroids, new_centroids):
-            break
-
-        centroids = new_centroids
-
-    return cluster_labels
-
-
 def kmeans_cluster_and_evaluate(data_file, encoding_type):
-    # todo: implement this function
     print(f'starting kmeans clustering and evaluation with {data_file} and encoding {encoding_type}')
     data = {}
     # read in data
@@ -76,32 +60,27 @@ def kmeans_cluster_and_evaluate(data_file, encoding_type):
         reader = csv.reader(f, delimiter='\t')
         data['labels'] = [row[0] for row in reader]
 
-    # extract features using TfidfVectorizer
-    vectorizer = TfidfVectorizer()
-    X = vectorizer.fit_transform(data['sentences'])
+        # extract features using TfidfVectorizer or SBERT
+    if encoding_type == 'TFIDF':
+        vectorizer = TfidfVectorizer()
+        X = vectorizer.fit_transform(data['sentences'])
+    elif encoding_type == 'SBERT':
+        model_name = 'distilbert-base-nli-stsb-mean-tokens'
+        model = SentenceTransformer(model_name)
+        X = model.encode(data['sentences'])
 
     # initialize KMeans with random centroids
     model = KMeans(n_clusters=len(set(data['labels'])))
 
-    # fit model to data
-    model.fit(X)
-
-    # evaluate model using RI and ARI
     RI_scores = []
     ARI_scores = []
     for i in range(10):
+        # fit model to data
+        model.fit(X)
+
+        # evaluate model using RI and ARI
         RI_scores.append(rand_score(data['labels'], model.predict(X)))
         ARI_scores.append(adjusted_rand_score(data['labels'], model.predict(X)))
-
-    # todo: perform feature extraction from sentences and
-    #  write your own kmeans implementation with random centroids initialization
-
-    # todo: evaluate against known ground-truth with RI and ARI:
-    #  https://scikit-learn.org/stable/modules/generated/sklearn.metrics.rand_score.html and
-    #  https://scikit-learn.org/stable/modules/generated/sklearn.metrics.adjusted_rand_score.html
-
-
-    # todo: fill in the dictionary below with evaluation scores averaged over 10 invocations
 
     # return mean evaluation scores
     evaluation_results = {'mean_RI_score': np.mean(RI_scores), 'mean_ARI_score': np.mean(ARI_scores)}

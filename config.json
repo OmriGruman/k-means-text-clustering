@@ -1,4 +1,4 @@
 {
-  "data": "data/covid_questions_data.tsv",
-  "encoding_type": "TFIDF"
+  "data": "data/ask_ubuntu_data.tsv",
+  "encoding_type": "SBERT"
 }
