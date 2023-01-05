@@ -1,4 +1,4 @@
 {
   "data": "data/covid_questions_data.tsv",
-  "encoding_type": "TFIDF"
+  "encoding_type": "SBERT"
 }
