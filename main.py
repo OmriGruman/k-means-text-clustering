@@ -1,6 +1,7 @@
 import json
 import numpy as np
 import csv
+from time import time
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import adjusted_rand_score, rand_score
 from sentence_transformers import SentenceTransformer
@@ -12,7 +13,7 @@ class KMeans:
         self.centroids = []
         self.clusters = []
 
-    def fit(self, embeddings, max_iter=None):
+    def fit(self, embeddings, max_iter=100):
         # initialize centroids randomly
         self.centroids = embeddings[np.random.choice(embeddings.shape[0], self.n_clusters, replace=False)]
 
@@ -39,7 +40,7 @@ class KMeans:
                 max_iter -= 1
 
     def __call__(self, embeddings):
-        # assign each point to closest centroid
+        # assign each point to the closest centroid
         clusters = np.zeros(embeddings.shape[0])
         for i, point in enumerate(embeddings):
             if not isinstance(point, np.ndarray):
@@ -85,6 +86,8 @@ def kmeans_cluster_and_evaluate(data_file, encoding_type):
 
 
 if __name__ == '__main__':
+    start_time = time()
+
     with open('config.json', 'r') as json_file:
         config = json.load(json_file)
 
@@ -92,3 +95,5 @@ if __name__ == '__main__':
 
     for k, v in results.items():
         print(k, v, sep='\t')
+
+    print(f"clustering took {time() - start_time:.2f} seconds")
